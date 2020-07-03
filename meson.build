@@ -245,23 +245,6 @@ if (host_machine.system() != 'darwin' and
     endforeach
 endif
 
-## configure Xnest - nesting X server
-build_xnest = get_option('xnest') != 'false'
-xnest_required = get_option('xnest') == 'true'
-xnest_dep = [
-    dependency('xext', version: xext_req, required: xnest_required),
-    dependency('x11', required: xnest_required),
-    dependency('xau', required: xnest_required),
-]
-if get_option('xnest') == 'auto'
-    # check for all the deps being found, to handle 'auto' mode.
-    foreach d: xnest_dep
-        if not d.found()
-            build_xnest = false
-        endif
-    endforeach
-endif
-
 build_xwin = false
 if get_option('xwin') == 'auto'
     if (host_machine.system() == 'cygwin' or
@@ -278,7 +261,6 @@ build_xvfb = get_option('xvfb')
 summary({
         'Xorg': build_xorg,
         'Xwayland': build_xwayland,
-        'Xnest': build_xnest,
         'Xvfb': build_xvfb,
         'Xwin': build_xwin,
     },
