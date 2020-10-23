@@ -231,7 +231,6 @@ if (host_machine.system() != 'darwin' and
     endforeach
 endif
 
-build_xephyr = get_option('xephyr')
 build_xvfb = get_option('xvfb')
 
 summary({
@@ -655,9 +654,6 @@ subdir('Xi')
 # other
 if build_glamor
     subdir('glamor')
-endif
-if get_option('xephyr')
-    subdir('exa')
 endif
 subdir('doc')
 
