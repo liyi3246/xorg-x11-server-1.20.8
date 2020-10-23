@@ -84,7 +84,6 @@ Equipment Corporation.
 #include <X11/fonts/fontstruct.h>
 #include <X11/fonts/libxfont2.h>
 
-#include "config/hotplug_priv.h"
 #include "dix/callback_priv.h"
 #include "dix/cursor_priv.h"
 #include "dix/dix_priv.h"
