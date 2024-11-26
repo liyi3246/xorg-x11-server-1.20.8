@@ -973,6 +973,10 @@ xwl_screen_init(ScreenPtr pScreen, int argc, char **argv)
         else if (strcmp(argv[i], "-hidpi") == 0) {
             xwl_screen->hidpi = 1;
         }
+        else if (strcmp(argv[i], "+iglx") == 0) {
+            ErrorF("Xwayland does not support indirect GLX contexts\n");
+            return FALSE;
+        }
     }
 
     if (!xwl_screen->rootless) {
