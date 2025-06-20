@@ -1934,14 +1934,23 @@ static const struct wl_seat_listener seat_listener = {
     seat_handle_name
 };
 
+static const struct wl_surface_listener surface_listener = {
+    xwl_cursor_surface_enter,
+    xwl_cursor_surface_leave
+};
+
 static void
 xwl_cursor_init(struct xwl_cursor *xwl_cursor, struct xwl_screen *xwl_screen,
                 void (* update_proc)(struct xwl_cursor *))
 {
+    xwl_cursor->xwl_screen = xwl_screen;
     xwl_cursor->surface = wl_compositor_create_surface(xwl_screen->compositor);
     xwl_cursor->update_proc = update_proc;
     xwl_cursor->frame_cb = NULL;
     xwl_cursor->needs_update = FALSE;
+    xwl_cursor->surface_scale = 1;
+    xorg_list_init(&xwl_cursor->xwl_output_list);
+    wl_surface_add_listener(xwl_cursor->surface, &surface_listener, xwl_cursor);
 }
 
 static void

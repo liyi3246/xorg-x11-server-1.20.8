@@ -244,14 +244,13 @@ xwl_tablet_tool_set_pointer_surface(struct xwl_tablet_tool *xwl_tablet_tool)
 {
     struct xwl_cursor *xwl_cursor = &xwl_tablet_tool->cursor;
     struct xwl_seat *xwl_seat = xwl_tablet_tool->seat;
-    struct xwl_screen *xwl_screen = xwl_seat->xwl_screen;
     int xhot, yhot;
 
     if (!xwl_seat->x_cursor)
         return;
 
-    xhot = xwl_seat->x_cursor->bits->xhot / xwl_screen->global_surface_scale;
-    yhot = xwl_seat->x_cursor->bits->yhot / xwl_screen->global_surface_scale;
+    xhot = xwl_seat->x_cursor->bits->xhot / xwl_cursor->surface_scale;
+    yhot = xwl_seat->x_cursor->bits->yhot / xwl_cursor->surface_scale;
 
     zwp_tablet_tool_v2_set_cursor(xwl_tablet_tool->tool,
                                   xwl_tablet_tool->proximity_in_serial,
@@ -297,13 +296,6 @@ xwl_tablet_tool_set_cursor(struct xwl_tablet_tool *xwl_tablet_tool)
     xwl_cursor_attach_pixmap(xwl_seat, xwl_cursor, pixmap);
 }
 
-void
-xwl_cursor_release(struct xwl_cursor *xwl_cursor)
-{
-    wl_surface_destroy(xwl_cursor->surface);
-    xwl_cursor_clear_frame_cb(xwl_cursor);
-}
-
 static void
 xwl_seat_update_all_cursors(struct xwl_seat *xwl_seat)
 {
@@ -318,6 +310,25 @@ xwl_seat_update_all_cursors(struct xwl_seat *xwl_seat)
 
     /* Clear delayed cursor if any */
     xwl_seat->pending_x_cursor = NULL;
+}
+
+static void
+xwl_cursor_free_outputs(struct xwl_cursor *xwl_cursor)
+{
+    struct xwl_surface_output *surface_output, *tmp;
+
+    xorg_list_for_each_entry_safe(surface_output, tmp, &xwl_cursor->xwl_output_list, link) {
+        xorg_list_del(&surface_output->link);
+        free(surface_output);
+    }
+}
+
+void
+xwl_cursor_release(struct xwl_cursor *xwl_cursor)
+{
+    wl_surface_destroy(xwl_cursor->surface);
+    xwl_cursor_clear_frame_cb(xwl_cursor);
+    xwl_cursor_free_outputs(xwl_cursor);
 }
 
 static void
@@ -462,4 +473,95 @@ xwl_screen_init_cursor(struct xwl_screen *xwl_screen)
     return miPointerInitialize(xwl_screen->screen,
                                &xwl_pointer_sprite_funcs,
                                &xwl_pointer_screen_funcs, TRUE);
+}
+
+static void
+xwl_cursor_enter_output(struct xwl_cursor *xwl_cursor, struct xwl_output *xwl_output)
+{
+    struct xwl_surface_output *surface_output;
+
+    surface_output = XNFcallocarray(1, sizeof(struct xwl_surface_output));
+    surface_output->xwl_output = xwl_output;
+    xorg_list_add(&surface_output->link, &xwl_cursor->xwl_output_list);
+}
+
+static void
+xwl_cursor_leave_output(struct xwl_cursor *xwl_cursor, struct xwl_output *xwl_output)
+{
+    struct xwl_surface_output *surface_output, *tmp;
+
+    xorg_list_for_each_entry_safe(surface_output, tmp, &xwl_cursor->xwl_output_list, link) {
+        if (surface_output->xwl_output == xwl_output) {
+            xorg_list_del(&surface_output->link);
+            free(surface_output);
+        }
+    }
+}
+
+static int
+xwl_cursor_get_max_output_scale(struct xwl_cursor *xwl_cursor)
+{
+    struct xwl_surface_output *surface_output;
+    struct xwl_output *xwl_output;
+    int scale = 1;
+
+    xorg_list_for_each_entry(surface_output, &xwl_cursor->xwl_output_list, link) {
+        xwl_output = surface_output->xwl_output;
+        if (xwl_output->scale > scale)
+            scale = xwl_output->scale;
+    }
+
+    return scale;
+}
+
+static void
+xwl_cursor_update_surface_scale(struct xwl_cursor *xwl_cursor)
+{
+    struct xwl_screen *xwl_screen = xwl_cursor->xwl_screen;
+    struct xwl_tablet_tool *xwl_tablet_tool;
+    struct xwl_seat *xwl_seat;
+
+    xwl_cursor->surface_scale = xwl_cursor_get_max_output_scale(xwl_cursor);
+
+    xorg_list_for_each_entry(xwl_seat, &xwl_screen->seat_list, link) {
+        if (&xwl_seat->cursor == xwl_cursor)
+            xwl_seat_set_pointer_surface(xwl_seat);
+
+        xorg_list_for_each_entry(xwl_tablet_tool, &xwl_seat->tablet_tools, link) {
+            if (xwl_tablet_tool->proximity_in_serial == 0)
+                continue;
+            if (&xwl_tablet_tool->cursor == xwl_cursor)
+                xwl_tablet_tool_set_pointer_surface(xwl_tablet_tool);
+        }
+    }
+}
+
+void
+xwl_cursor_surface_enter(void *data,
+                         struct wl_surface *wl_surface,
+                         struct wl_output *wl_output)
+{
+    struct xwl_cursor *xwl_cursor = data;
+    struct xwl_screen *xwl_screen = xwl_cursor->xwl_screen;
+    struct xwl_output *xwl_output = xwl_output_from_wl_output(xwl_screen, wl_output);
+
+    if (xwl_output) {
+        xwl_cursor_enter_output(xwl_cursor, xwl_output);
+        xwl_cursor_update_surface_scale(xwl_cursor);
+    }
+}
+
+void
+xwl_cursor_surface_leave(void *data,
+                         struct wl_surface *wl_surface,
+                         struct wl_output *wl_output)
+{
+    struct xwl_cursor *xwl_cursor = data;
+    struct xwl_screen *xwl_screen = xwl_cursor->xwl_screen;
+    struct xwl_output *xwl_output = xwl_output_from_wl_output(xwl_screen, wl_output);
+
+    if (xwl_output) {
+        xwl_cursor_leave_output(xwl_cursor, xwl_output);
+        xwl_cursor_update_surface_scale(xwl_cursor);
+    }
 }
