@@ -1064,22 +1064,22 @@ xwl_window_update_surface_scale(struct xwl_window *xwl_window)
 static void
 xwl_window_enter_output(struct xwl_window *xwl_window, struct xwl_output *xwl_output)
 {
-    struct xwl_window_output *window_output;
+    struct xwl_surface_output *surface_output;
 
-    window_output = XNFcallocarray(1, sizeof(struct xwl_window_output));
-    window_output->xwl_output = xwl_output;
-    xorg_list_add(&window_output->link, &xwl_window->xwl_output_list);
+    surface_output = XNFcallocarray(1, sizeof(struct xwl_surface_output));
+    surface_output->xwl_output = xwl_output;
+    xorg_list_add(&surface_output->link, &xwl_window->xwl_output_list);
 }
 
 void
 xwl_window_leave_output(struct xwl_window *xwl_window, struct xwl_output *xwl_output)
 {
-    struct xwl_window_output *window_output, *tmp;
+    struct xwl_surface_output *surface_output, *tmp;
 
-    xorg_list_for_each_entry_safe(window_output, tmp, &xwl_window->xwl_output_list, link) {
-        if (window_output->xwl_output == xwl_output) {
-            xorg_list_del(&window_output->link);
-            free(window_output);
+    xorg_list_for_each_entry_safe(surface_output, tmp, &xwl_window->xwl_output_list, link) {
+        if (surface_output->xwl_output == xwl_output) {
+            xorg_list_del(&surface_output->link);
+            free(surface_output);
         }
     }
 }
@@ -1087,23 +1087,23 @@ xwl_window_leave_output(struct xwl_window *xwl_window, struct xwl_output *xwl_ou
 static void
 xwl_window_free_outputs(struct xwl_window *xwl_window)
 {
-    struct xwl_window_output *window_output, *tmp;
+    struct xwl_surface_output *surface_output, *tmp;
 
-    xorg_list_for_each_entry_safe(window_output, tmp, &xwl_window->xwl_output_list, link) {
-        xorg_list_del(&window_output->link);
-        free(window_output);
+    xorg_list_for_each_entry_safe(surface_output, tmp, &xwl_window->xwl_output_list, link) {
+        xorg_list_del(&surface_output->link);
+        free(surface_output);
     }
 }
 
 int
 xwl_window_get_max_output_scale(struct xwl_window *xwl_window)
 {
-    struct xwl_window_output *window_output;
+    struct xwl_surface_output *surface_output;
     struct xwl_output *xwl_output;
     int scale = 1;
 
-    xorg_list_for_each_entry(window_output, &xwl_window->xwl_output_list, link) {
-        xwl_output = window_output->xwl_output;
+    xorg_list_for_each_entry(surface_output, &xwl_window->xwl_output_list, link) {
+        xwl_output = surface_output->xwl_output;
         if (xwl_output->scale > scale)
             scale = xwl_output->scale;
     }
