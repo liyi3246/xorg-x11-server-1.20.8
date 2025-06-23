@@ -181,6 +181,26 @@ xwl_cursor_clear_frame_cb(struct xwl_cursor *xwl_cursor)
     return FALSE;
 }
 
+static void
+xwl_seat_set_pointer_surface(struct xwl_seat *xwl_seat)
+{
+    struct xwl_screen *xwl_screen = xwl_seat->xwl_screen;
+    struct xwl_cursor *xwl_cursor = &xwl_seat->cursor;
+    int xhot, yhot;
+
+    if (!xwl_seat->x_cursor)
+        return;
+
+    xhot = xwl_seat->x_cursor->bits->xhot / xwl_screen->global_surface_scale;
+    yhot = xwl_seat->x_cursor->bits->yhot / xwl_screen->global_surface_scale;
+
+    wl_pointer_set_cursor(xwl_seat->wl_pointer,
+                          xwl_seat->pointer_enter_serial,
+                          xwl_cursor->surface,
+                          xhot,
+                          yhot);
+}
+
 void
 xwl_seat_set_cursor(struct xwl_seat *xwl_seat)
 {
@@ -188,7 +208,6 @@ xwl_seat_set_cursor(struct xwl_seat *xwl_seat)
     struct xwl_screen *xwl_screen = xwl_seat->xwl_screen;
     PixmapPtr pixmap;
     CursorPtr cursor;
-    int xhot, yhot;
 
     if (!xwl_seat->wl_pointer)
         return;
@@ -215,16 +234,30 @@ xwl_seat_set_cursor(struct xwl_seat *xwl_seat)
 
     xwl_cursor_copy_bits_to_pixmap(cursor, pixmap);
 
+    xwl_seat_set_pointer_surface(xwl_seat);
+
+    xwl_cursor_attach_pixmap(xwl_seat, xwl_cursor, pixmap);
+}
+
+static void
+xwl_tablet_tool_set_pointer_surface(struct xwl_tablet_tool *xwl_tablet_tool)
+{
+    struct xwl_cursor *xwl_cursor = &xwl_tablet_tool->cursor;
+    struct xwl_seat *xwl_seat = xwl_tablet_tool->seat;
+    struct xwl_screen *xwl_screen = xwl_seat->xwl_screen;
+    int xhot, yhot;
+
+    if (!xwl_seat->x_cursor)
+        return;
+
     xhot = xwl_seat->x_cursor->bits->xhot / xwl_screen->global_surface_scale;
     yhot = xwl_seat->x_cursor->bits->yhot / xwl_screen->global_surface_scale;
 
-    wl_pointer_set_cursor(xwl_seat->wl_pointer,
-                          xwl_seat->pointer_enter_serial,
-                          xwl_cursor->surface,
-                          xhot,
-                          yhot);
-
-    xwl_cursor_attach_pixmap(xwl_seat, xwl_cursor, pixmap);
+    zwp_tablet_tool_v2_set_cursor(xwl_tablet_tool->tool,
+                                  xwl_tablet_tool->proximity_in_serial,
+                                  xwl_cursor->surface,
+                                  xhot,
+                                  yhot);
 }
 
 void
@@ -235,7 +268,6 @@ xwl_tablet_tool_set_cursor(struct xwl_tablet_tool *xwl_tablet_tool)
     struct xwl_cursor *xwl_cursor = &xwl_tablet_tool->cursor;
     PixmapPtr pixmap;
     CursorPtr cursor;
-    int xhot, yhot;
 
     if (!xwl_seat->x_cursor) {
         zwp_tablet_tool_v2_set_cursor(xwl_tablet_tool->tool,
@@ -260,14 +292,7 @@ xwl_tablet_tool_set_cursor(struct xwl_tablet_tool *xwl_tablet_tool)
 
     xwl_cursor_copy_bits_to_pixmap(cursor, pixmap);
 
-    xhot = xwl_seat->x_cursor->bits->xhot / xwl_screen->global_surface_scale;
-    yhot = xwl_seat->x_cursor->bits->yhot / xwl_screen->global_surface_scale;
-
-    zwp_tablet_tool_v2_set_cursor(xwl_tablet_tool->tool,
-                                  xwl_tablet_tool->proximity_in_serial,
-                                  xwl_cursor->surface,
-                                  xhot,
-                                  yhot);
+    xwl_tablet_tool_set_pointer_surface(xwl_tablet_tool);
 
     xwl_cursor_attach_pixmap(xwl_seat, xwl_cursor, pixmap);
 }
