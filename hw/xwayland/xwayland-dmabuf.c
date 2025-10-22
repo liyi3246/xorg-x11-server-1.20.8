@@ -370,10 +370,16 @@ xwl_glamor_get_drawable_modifiers_and_scanout(DrawablePtr drawable,
 
     main_dev = xwl_gbm_get_main_device(xwl_screen);
 
+    if (!xwl_window->feedback.feedback_done) {
+      /* Surface feedback is not known yet, use the default feedback instead */
+      return xwl_dmabuf_get_modifiers_for_device(&xwl_screen->default_feedback, main_dev,
+                                                 format, num_modifiers, modifiers,
+                                                 supports_scanout);
+    }
+
     return xwl_dmabuf_get_modifiers_for_device(&xwl_window->feedback, main_dev,
                                                format, num_modifiers, modifiers,
                                                supports_scanout);
-
 }
 
 Bool
