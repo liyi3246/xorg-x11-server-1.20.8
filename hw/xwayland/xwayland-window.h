@@ -52,7 +52,7 @@ struct xwl_wl_surface {
     struct xorg_list link;
 };
 
-struct xwl_window_output {
+struct xwl_surface_output {
     struct xorg_list link;
     struct xwl_output *xwl_output;
 };

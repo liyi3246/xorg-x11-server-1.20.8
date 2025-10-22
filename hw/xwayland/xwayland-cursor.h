@@ -36,5 +36,8 @@ void xwl_cursor_release(struct xwl_cursor *xwl_cursor);
 void xwl_tablet_tool_set_cursor(struct xwl_tablet_tool *tool);
 void xwl_seat_set_cursor(struct xwl_seat *xwl_seat);
 Bool xwl_screen_init_cursor(struct xwl_screen *xwl_screen);
-
+void xwl_cursor_surface_enter(void *data,
+                              struct wl_surface *wl_surface, struct wl_output *wl_output);
+void xwl_cursor_surface_leave(void *data,
+                              struct wl_surface *wl_surface, struct wl_output *wl_output);
 #endif /* XWAYLAND_CURSOR_H */

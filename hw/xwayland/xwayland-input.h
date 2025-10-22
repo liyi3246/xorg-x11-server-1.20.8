@@ -47,10 +47,13 @@ struct xwl_pointer_warp_emulator {
 };
 
 struct xwl_cursor {
+    struct xwl_screen *xwl_screen;
     void (* update_proc) (struct xwl_cursor *);
     struct wl_surface *surface;
     struct wl_callback *frame_cb;
+    struct xorg_list xwl_output_list;
     Bool needs_update;
+    int surface_scale;
 };
 
 struct xwl_seat {
