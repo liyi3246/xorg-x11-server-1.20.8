@@ -2725,6 +2725,9 @@ ProcXkbSetMap(ClientPtr client)
     CHK_KBD_DEVICE(dev, stuff->deviceSpec, client, DixManageAccess);
     CHK_MASK_LEGAL(0x01, stuff->present, XkbAllMapComponentsMask);
 
+    if (dev->hasDdxKeymap)
+        return BadAccess;
+
     /* first verify the request length carefully */
     rc = _XkbSetMapCheckLength(stuff);
     if (rc != Success)
@@ -3110,6 +3113,9 @@ ProcXkbSetCompatMap(ClientPtr client)
 
     CHK_KBD_DEVICE(dev, stuff->deviceSpec, client, DixManageAccess);
 
+    if (dev->hasDdxKeymap)
+        return BadAccess;
+
     data = (char *) &stuff[1];
 
     /* check first using a dry-run */
@@ -3366,6 +3372,9 @@ ProcXkbSetIndicatorMap(ClientPtr client)
         return BadAccess;
 
     CHK_KBD_DEVICE(dev, stuff->deviceSpec, client, DixSetAttrAccess);
+
+    if (dev->hasDdxKeymap)
+        return BadAccess;
 
     if (stuff->which == 0)
         return Success;
@@ -4461,6 +4470,9 @@ ProcXkbSetNames(ClientPtr client)
 
     CHK_KBD_DEVICE(dev, stuff->deviceSpec, client, DixManageAccess);
     CHK_MASK_LEGAL(0x01, stuff->which, XkbAllNamesMask);
+
+    if (dev->hasDdxKeymap)
+        return BadAccess;
 
     /* check device-independent stuff */
     tmp = (CARD32 *) &stuff[1];
@@ -5677,6 +5689,9 @@ ProcXkbSetGeometry(ClientPtr client)
     CHK_KBD_DEVICE(dev, stuff->deviceSpec, client, DixManageAccess);
     CHK_ATOM_OR_NONE(stuff->name);
 
+    if (dev->hasDdxKeymap)
+        return BadAccess;
+
     rc = _XkbSetGeometry(client, dev, stuff);
     if (rc != Success)
         return rc;
@@ -5942,6 +5957,9 @@ ProcXkbGetKbdByName(ClientPtr client)
 
     CHK_KBD_DEVICE(dev, stuff->deviceSpec, client, access_mode);
     master = GetMaster(dev, MASTER_KEYBOARD);
+
+    if (stuff->load && dev->hasDdxKeymap)
+        return BadAccess;
 
     xkb = dev->key->xkbInfo->desc;
     status = Success;
