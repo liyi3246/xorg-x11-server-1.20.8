@@ -267,6 +267,7 @@ glamor_glyphs_flush(CARD8 op, PicturePtr src, PicturePtr dst,
     DrawablePtr drawable = dst->pDrawable;
     glamor_screen_private *glamor_priv = glamor_get_screen_private(drawable->pScreen);
     PixmapPtr atlas_pixmap = atlas->atlas;
+    assert(atlas_pixmap != NULL);
     glamor_pixmap_private *atlas_priv = glamor_get_pixmap_private(atlas_pixmap);
     glamor_pixmap_fbo *atlas_fbo = glamor_pixmap_fbo_at(atlas_priv, 0);
     PixmapPtr pixmap = glamor_get_drawable_pixmap(drawable);
@@ -361,7 +362,7 @@ glamor_glyph_start(ScreenPtr screen, int count)
     return v;
 }
 
-static inline struct glamor_glyph_atlas *
+static inline struct glamor_glyph_atlas * GLAMOR_NONNULL_RETURN
 glamor_atlas_for_glyph(glamor_screen_private *glamor_priv, DrawablePtr drawable)
 {
     if (drawable->depth == 32)
@@ -444,6 +445,7 @@ glamor_composite_glyphs(CARD8 op,
                         }
                         glyph_atlas = next_atlas;
                     }
+                    assert(glyph_atlas != NULL);
 
                     /* Glyph not cached in current atlas?
                      */
