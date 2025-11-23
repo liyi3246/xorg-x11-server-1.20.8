@@ -1221,6 +1221,8 @@ glamor_egl_init(ScrnInfoPtr scrn, int fd)
             glamor_egl->dmabuf_capable = TRUE;
         else if (strstr((const char *)renderer, "zink"))
             glamor_egl->dmabuf_capable = TRUE;
+        else if (strstr((const char *)renderer, "radeonsi"))
+            glamor_egl->dmabuf_capable = TRUE;
         else
             glamor_egl->dmabuf_capable = FALSE;
     }
