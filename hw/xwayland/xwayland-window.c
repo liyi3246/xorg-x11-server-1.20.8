@@ -443,18 +443,24 @@ xwl_window_enable_viewport_for_output(struct xwl_window *xwl_window,
                                       struct xwl_emulated_mode *emulated_mode)
 {
     struct xwl_screen *xwl_screen = xwl_window->xwl_screen;
-    int width, height;
+    int width, height, logical_width, logical_height;
+
+    if (xwl_output->rotation & (RR_Rotate_0 | RR_Rotate_180)) {
+        width = emulated_mode->width / xwl_screen->global_surface_scale;
+        height = emulated_mode->height / xwl_screen->global_surface_scale;
+    } else {
+        width = emulated_mode->height / xwl_screen->global_surface_scale;
+        height = emulated_mode->width / xwl_screen->global_surface_scale;
+    }
+
+    output_get_logical_extents(xwl_output, &logical_width, &logical_height);
 
     if (!xwl_window_has_viewport_enabled(xwl_window)) {
         DebugF("XWAYLAND: enabling viewport %dx%d -> %dx%d\n",
-               emulated_mode->width, emulated_mode->height,
-               xwl_output->width, xwl_output->height);
+               width, height, logical_width, logical_height);
         xwl_window->viewport = wp_viewporter_get_viewport(xwl_window->xwl_screen->viewporter,
                                                           xwl_window->surface);
     }
-
-    width = emulated_mode->width / xwl_screen->global_surface_scale;
-    height = emulated_mode->height / xwl_screen->global_surface_scale;
 
     wp_viewport_set_source(xwl_window->viewport,
                            wl_fixed_from_int(0),
@@ -462,11 +468,10 @@ xwl_window_enable_viewport_for_output(struct xwl_window *xwl_window,
                            wl_fixed_from_int(width),
                            wl_fixed_from_int(height));
     wp_viewport_set_destination(xwl_window->viewport,
-                                xwl_output->width,
-                                xwl_output->height);
+                                logical_width, logical_height);
 
-    xwl_window->viewport_scale_x = (float) width / xwl_output->width;
-    xwl_window->viewport_scale_y = (float) height / xwl_output->height;
+    xwl_window->viewport_scale_x = (float) width / logical_width;
+    xwl_window->viewport_scale_y = (float) height / logical_height;
     xwl_window_set_input_region(xwl_window, wInputShape(xwl_window->toplevel));
 }
 
@@ -524,7 +529,7 @@ is_output_suitable_for_fullscreen(struct xwl_output *xwl_output)
     if (xwl_output == NULL)
         return FALSE;
 
-    if (xwl_output->width == 0 || xwl_output->height == 0)
+    if (xwl_output->logical_w == 0 || xwl_output->logical_h == 0)
         return FALSE;
 
     return TRUE;
@@ -602,14 +607,24 @@ xwl_window_should_enable_viewport(struct xwl_window *xwl_window,
      * This path gets hit by most games / libs (e.g. SDL, SFML, OGRE)
      */
     xorg_list_for_each_entry(xwl_output, &xwl_screen->output_list, link) {
+        int emulated_width, emulated_height;
+
         emulated_mode = xwl_output_get_emulated_mode_for_client(xwl_output, owner);
         if (!emulated_mode)
             continue;
 
-        if (drawable->x == xwl_output->x &&
-            drawable->y == xwl_output->y &&
-            drawable->width  == emulated_mode->width &&
-            drawable->height == emulated_mode->height) {
+        if (xwl_output->rotation & (RR_Rotate_0 | RR_Rotate_180)) {
+            emulated_width = emulated_mode->width;
+            emulated_height = emulated_mode->height;
+        } else {
+            emulated_width = emulated_mode->height;
+            emulated_height = emulated_mode->width;
+        }
+
+        if (drawable->x == xwl_output->logical_x &&
+            drawable->y == xwl_output->logical_y &&
+            drawable->width  == emulated_width &&
+            drawable->height == emulated_height) {
 
             memcpy(emulated_mode_ret, emulated_mode, sizeof(struct xwl_emulated_mode));
             *xwl_output_ret = xwl_output;

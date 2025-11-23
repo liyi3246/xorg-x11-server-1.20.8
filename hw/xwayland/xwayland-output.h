@@ -56,8 +56,8 @@ struct xwl_output {
     struct wl_output *output;
     struct zxdg_output_v1 *xdg_output;
     uint32_t server_output_id;
-    int32_t x, y, width, height, refresh, scale;
-    int32_t mode_width, mode_height;
+    int32_t logical_x, logical_y, logical_w, logical_h;
+    int32_t mode_width, mode_height, refresh, scale;
     double xscale; /* Effective scale, can be fractional */
     Rotation rotation;
     Bool wl_output_done;
@@ -110,6 +110,8 @@ void xwl_output_remove(struct xwl_output *xwl_output);
 
 struct xwl_emulated_mode *xwl_output_get_emulated_mode_for_client(
                             struct xwl_output *xwl_output, ClientPtr client);
+
+void output_get_logical_extents(struct xwl_output *xwl_output, int *width, int *height);
 
 RRModePtr xwl_output_find_mode(struct xwl_output *xwl_output,
                                int32_t width, int32_t height);

@@ -102,8 +102,8 @@ output_handle_geometry(void *data, struct wl_output *wl_output, int x, int y,
 
     /* Apply the change from wl_output only if xdg-output is not supported */
     if (!xwl_output->xdg_output) {
-        xwl_output->x = x;
-        xwl_output->y = y;
+        xwl_output->logical_x = x;
+        xwl_output->logical_y = y;
     }
     xwl_output->rotation = wl_transform_to_xrandr(transform);
 }
@@ -119,10 +119,41 @@ output_handle_mode(void *data, struct wl_output *wl_output, uint32_t flags,
 
     /* Apply the change from wl_output only if xdg-output is not supported */
     if (!xwl_output->xdg_output) {
-        xwl_output->width = width;
-        xwl_output->height = height;
+        xwl_output->logical_w = width;
+        xwl_output->logical_h = height;
     }
+
+    xwl_output->mode_width = width;
+    xwl_output->mode_height = height;
     xwl_output->refresh = refresh;
+}
+
+static void
+output_get_logical_mode(struct xwl_output *xwl_output, int *width, int *height)
+{
+    /* When we have xdg-output support the stored size is already rotated. */
+    if (xwl_output->xdg_output == NULL ||
+        (xwl_output->rotation & (RR_Rotate_0 | RR_Rotate_180))) {
+        *width = xwl_output->logical_w;
+        *height = xwl_output->logical_h;
+    } else {
+        *width = xwl_output->logical_h;
+        *height = xwl_output->logical_w;
+    }
+}
+
+void
+output_get_logical_extents(struct xwl_output *xwl_output, int *width, int *height)
+{
+    /* When we have xdg-output support the stored size is already rotated. */
+    if (xwl_output->xdg_output ||
+        (xwl_output->rotation & (RR_Rotate_0 | RR_Rotate_180))) {
+        *width = xwl_output->logical_w;
+        *height = xwl_output->logical_h;
+    } else {
+        *width = xwl_output->logical_h;
+        *height = xwl_output->logical_w;
+    }
 }
 
 /**
@@ -133,23 +164,23 @@ output_handle_mode(void *data, struct wl_output *wl_output, uint32_t flags,
 static inline void
 output_get_new_size(struct xwl_output *xwl_output, int *width, int *height)
 {
-    int output_width, output_height;
+    int logical_width, logical_height, max_width, max_height;
 
-    /* When we have xdg-output support the stored size is already rotated. */
-    if (xwl_output->xdg_output
-            || (xwl_output->rotation & (RR_Rotate_0 | RR_Rotate_180))) {
-        output_width = xwl_output->width;
-        output_height = xwl_output->height;
+    output_get_logical_extents(xwl_output, &logical_width, &logical_height);
+
+    if (xwl_output->rotation & (RR_Rotate_0 | RR_Rotate_180)) {
+        max_width = max(logical_width, xwl_output->mode_width);
+        max_height = max(logical_height, xwl_output->mode_height);
     } else {
-        output_width = xwl_output->height;
-        output_height = xwl_output->width;
+        max_width = max(logical_width, xwl_output->mode_height);
+        max_height = max(logical_height, xwl_output->mode_width);
     }
 
-    if (*width < xwl_output->x + output_width)
-        *width = xwl_output->x + output_width;
+    if (*width < xwl_output->logical_x + max_width)
+        *width = xwl_output->logical_x + max_width;
 
-    if (*height < xwl_output->y + output_height)
-        *height = xwl_output->y + output_height;
+    if (*height < xwl_output->logical_y + max_height)
+        *height = xwl_output->logical_y + max_height;
 }
 
 static int
@@ -299,49 +330,46 @@ xwl_output_remove_emulated_mode_for_client(struct xwl_output *xwl_output,
 
 /* From hw/xfree86/common/xf86DefModeSet.c with some obscure modes dropped */
 const int32_t xwl_output_fake_modes[][2] = {
-    /* 4:3 (1.33) */
-    { 2048, 1536 },
-    { 1920, 1440 },
-    { 1600, 1200 },
-    { 1440, 1080 },
-    { 1400, 1050 },
+    { 5120, 2880 }, /* 16:9 (1.77) */
+    { 4096, 2304 }, /* 16:9 (1.77) */
+    { 3840, 2160 }, /* 16:9 (1.77) */
+    { 3200, 1800 }, /* 16:9 (1.77) */
+    { 2880, 1620 }, /* 16:9 (1.77) */
+    { 2560, 1600 }, /* 16:10 (1.6) */
+    { 2560, 1440 }, /* 16:9 (1.77) */
+    { 2048, 1536 }, /* 4:3 (1.33) */
+    { 2048, 1152 }, /* 16:9 (1.77) */
+    { 1920, 1440 }, /* 4:3 (1.33) */
+    { 1920, 1200 }, /* 16:10 (1.6) */
+    { 1920, 1080 }, /* 16:9 (1.77) */
+    { 1680, 1050 }, /* 16:10 (1.6) */
+    { 1600, 1200 }, /* 4:3 (1.33) */
+    { 1600,  900 }, /* 16:9 (1.77) */
+    { 1440, 1080 }, /* 4:3 (1.33) */
+    { 1440,  900 }, /* 16:10 (1.6) */
+    { 1400, 1050 }, /* 4:3 (1.33) */
+    { 1368,  768 }, /* 16:9 (1.77) */
     { 1280, 1024 }, /* 5:4 (1.25) */
-    { 1280,  960 },
-    { 1152,  864 },
-    { 1024,  768 },
-    {  800,  600 },
-    {  640,  480 },
-    {  320,  240 },
-    /* 16:10 (1.6) */
-    { 2560, 1600 },
-    { 1920, 1200 },
-    { 1680, 1050 },
-    { 1440,  900 },
-    { 1280,  800 },
-    { 1152,  720 },
-    {  960,  600 },
-    {  928,  580 },
-    {  800,  500 },
-    {  768,  480 },
+    { 1280,  960 }, /* 4:3 (1.33) */
+    { 1280,  800 }, /* 16:10 (1.6) */
+    { 1280,  720 }, /* 16:9 (1.77) */
+    { 1152,  864 }, /* 4:3 (1.33) */
+    { 1152,  720 }, /* 16:10 (1.6) */
+    { 1024,  768 }, /* 4:3 (1.33) */
+    { 1024,  576 }, /* 16:9 (1.77) */
+    {  960,  600 }, /* 16:10 (1.6) */
+    {  928,  580 }, /* 16:10 (1.6) */
+    {  864,  486 }, /* 16:9 (1.77) */
+    {  800,  600 }, /* 4:3 (1.33) */
+    {  800,  500 }, /* 16:10 (1.6) */
+    {  768,  480 }, /* 16:10 (1.6) */
     {  720,  480 }, /* 3:2 (1.5) */
-    {  640,  400 },
-    {  320,  200 },
-    /* 16:9 (1.77) */
-    { 5120, 2880 },
-    { 4096, 2304 },
-    { 3840, 2160 },
-    { 3200, 1800 },
-    { 2880, 1620 },
-    { 2560, 1440 },
-    { 2048, 1152 },
-    { 1920, 1080 },
-    { 1600,  900 },
-    { 1368,  768 },
-    { 1280,  720 },
-    { 1024,  576 },
-    {  864,  486 },
-    {  720,  400 },
-    {  640,  350 },
+    {  720,  400 }, /* 16:9 (1.77) */
+    {  640,  480 }, /* 4:3 (1.33) */
+    {  640,  400 }, /* 16:10 (1.6) */
+    {  640,  350 }, /* 16:9 (1.77) */
+    {  320,  240 }, /* 4:3 (1.33) */
+    {  320,  200 }, /* 16:10 (1.6) */
 };
 
 /* Build an array with RRModes the first mode is the actual output mode, the
@@ -352,36 +380,74 @@ const int32_t xwl_output_fake_modes[][2] = {
 static RRModePtr *
 output_get_rr_modes(struct xwl_output *xwl_output,
                     int32_t width, int32_t height,
-                    int *count)
+                    int *count, int *logical_mode)
 {
     struct xwl_screen *xwl_screen = xwl_output->xwl_screen;
     RRModePtr *rr_modes;
-    int i;
+    int i = 0;
 
-    rr_modes = xallocarray(ARRAY_SIZE(xwl_output_fake_modes) + 1, sizeof(RRModePtr));
+    rr_modes = xallocarray(ARRAY_SIZE(xwl_output_fake_modes) + 2, sizeof(RRModePtr));
     if (!rr_modes)
         goto err;
 
-    /* Add actual output mode */
-    rr_modes[0] = xwayland_cvt(width, height, xwl_output->refresh / 1000.0, 0, 0);
-    if (!rr_modes[0])
+    *count = 0;
+
+    if (xwl_screen_has_resolution_change_emulation(xwl_screen) &&
+        (width != xwl_output->mode_width || height != xwl_output->mode_height)) {
+        /* Add native output mode as preferred */
+        rr_modes[0] = xwayland_cvt(xwl_output->mode_width, xwl_output->mode_height,
+                                   xwl_output->refresh / 1000.0, 0, 0);
+        if (!rr_modes[0])
+            goto err;
+
+        *count = 1;
+
+        /* Add fake modes larger than logical mode */
+        for (; i < ARRAY_SIZE(xwl_output_fake_modes); i++) {
+            if (xwl_output_fake_modes[i][0] <= width &&
+                xwl_output_fake_modes[i][1] <= height)
+                break;
+
+            /* Skip modes which are too big, avoid downscaling */
+            if (xwl_output_fake_modes[i][0] >= xwl_output->mode_width &&
+                xwl_output_fake_modes[i][1] >= xwl_output->mode_height)
+                continue;
+
+            rr_modes[*count] = xwayland_cvt(xwl_output_fake_modes[i][0],
+                                            xwl_output_fake_modes[i][1],
+                                            xwl_output->refresh / 1000.0, 0, 0);
+            if (!rr_modes[*count])
+                goto err;
+
+            (*count)++;
+        }
+    }
+
+    /* Add logical output mode */
+    rr_modes[*count] = xwayland_cvt(width, height, xwl_output->refresh / 1000.0, 0, 0);
+    if (!rr_modes[*count])
         goto err;
 
-    *count = 1;
+    *logical_mode = (*count)++;
 
     if (!xwl_screen_has_resolution_change_emulation(xwl_screen) && !xwl_screen->force_xrandr_emulation)
         return rr_modes;
 
     /* Add fake modes */
-    for (i = 0; i < ARRAY_SIZE(xwl_output_fake_modes); i++) {
-        /* Skip actual output mode, already added */
+    for (; i < ARRAY_SIZE(xwl_output_fake_modes); i++) {
+        /* Skip logical output mode, already added */
         if (xwl_output_fake_modes[i][0] == width &&
             xwl_output_fake_modes[i][1] == height)
             continue;
 
+        /* Skip native output mode, already added */
+        if (xwl_output_fake_modes[i][0] == xwl_output->mode_width &&
+            xwl_output_fake_modes[i][1] == xwl_output->mode_height)
+            continue;
+
         /* Skip modes which are too big, avoid downscaling */
-        if (xwl_output_fake_modes[i][0] > width ||
-            xwl_output_fake_modes[i][1] > height)
+        if (xwl_output_fake_modes[i][0] > max(width, xwl_output->mode_width) ||
+            xwl_output_fake_modes[i][1] > max(height, xwl_output->mode_height))
             continue;
 
         rr_modes[*count] = xwayland_cvt(xwl_output_fake_modes[i][0],
@@ -407,14 +473,18 @@ xwl_output_find_mode(struct xwl_output *xwl_output,
 
     /* width & height -1 means we want the actual output mode */
     if (width == -1 && height == -1) {
-        if (xwl_output->mode_width > 0 && xwl_output->mode_height > 0) {
-            /* If running rootful, use the current mode size to search for the mode */
+        if (xwl_output == xwl_output->xwl_screen->fixed_output &&
+            xwl_output->mode_width > 0 && xwl_output->mode_height > 0) {
+            /* If running rootful, use the current fixed size to search for the mode */
             width = xwl_output->mode_width;
             height = xwl_output->mode_height;
         }
-        else if (output->modes) {
-            /* else return the mode at first idx 0 */
-            return output->modes[0];
+        else {
+            output_get_logical_mode(xwl_output, &width, &height);
+
+            if (output->numModes &&
+                (width <= 0 || height <= 0))
+                return output->modes[0];
         }
     }
 
@@ -449,10 +519,17 @@ xwl_output_randr_emu_prop(struct xwl_screen *xwl_screen, ClientPtr client,
         if (!emulated_mode)
             continue;
 
-        prop->rects[index][0] = xwl_output->x;
-        prop->rects[index][1] = xwl_output->y;
-        prop->rects[index][2] = emulated_mode->width;
-        prop->rects[index][3] = emulated_mode->height;
+        prop->rects[index][0] = xwl_output->logical_x;
+        prop->rects[index][1] = xwl_output->logical_y;
+
+        if (xwl_output->rotation & (RR_Rotate_0 | RR_Rotate_180)) {
+            prop->rects[index][2] = emulated_mode->width;
+            prop->rects[index][3] = emulated_mode->height;
+        } else {
+            prop->rects[index][2] = emulated_mode->height;
+            prop->rects[index][3] = emulated_mode->width;
+        }
+
         index++;
     }
 
@@ -583,6 +660,7 @@ xwl_output_set_emulated_mode(struct xwl_output *xwl_output, ClientPtr client,
                              RRModePtr mode, Bool from_vidmode)
 {
     int old_emulated_width, old_emulated_height;
+    int logical_width, logical_height;
     int new_emulated_width, new_emulated_height;
 
     DebugF("XWAYLAND: xwl_output_set_emulated_mode from %s: %dx%d\n",
@@ -592,8 +670,9 @@ xwl_output_set_emulated_mode(struct xwl_output *xwl_output, ClientPtr client,
     xwl_output_get_emulated_root_size(xwl_output, client,
                                       &old_emulated_width, &old_emulated_height);
 
-    /* modes[0] is the actual (not-emulated) output mode */
-    if (mode == xwl_output->randr_output->modes[0])
+    /* Skip the logical (not-emulated) output mode */
+    output_get_logical_mode(xwl_output, &logical_width, &logical_height);
+    if (mode->mode.width == logical_width && mode->mode.height == logical_height)
         xwl_output_remove_emulated_mode_for_client(xwl_output, client);
     else
         xwl_output_add_emulated_mode_for_client(xwl_output, client, mode, from_vidmode);
@@ -632,31 +711,24 @@ apply_output_change(struct xwl_output *xwl_output)
 {
     struct xwl_screen *xwl_screen = xwl_output->xwl_screen;
     struct xwl_output *it;
-    int mode_width, mode_height, count;
-    int width = 0, height = 0, has_this_output = 0;
+    int logical_width, logical_height, count, has_this_output = 0;
     RRModePtr *randr_modes;
+    int logical_mode;
 
     /* Clear out the "done" received flags */
     xwl_output->wl_output_done = FALSE;
     xwl_output->xdg_output_done = FALSE;
 
-    /* When we have received an xdg-output for the mode size we might need to
-     * rotate back the stored logical size it provided.
-     */
-    if (xwl_output->xdg_output == NULL
-        || xwl_output->rotation & (RR_Rotate_0 | RR_Rotate_180)) {
-        mode_width = xwl_output->width;
-        mode_height = xwl_output->height;
-    } else {
-        mode_width = xwl_output->height;
-        mode_height = xwl_output->width;
-    }
+    output_get_logical_mode(xwl_output, &logical_width, &logical_height);
+
     if (xwl_output->randr_output) {
         /* Build a fresh modes array using the current refresh rate */
-        randr_modes = output_get_rr_modes(xwl_output, mode_width, mode_height, &count);
+        randr_modes = output_get_rr_modes(xwl_output, logical_width, logical_height,
+                                          &count, &logical_mode);
+
         RROutputSetModes(xwl_output->randr_output, randr_modes, count, 1);
-        RRCrtcNotify(xwl_output->randr_crtc, randr_modes[0],
-                     xwl_output->x, xwl_output->y,
+        RRCrtcNotify(xwl_output->randr_crtc, randr_modes[logical_mode],
+                     xwl_output->logical_x, xwl_output->logical_y,
                      xwl_output->rotation, NULL, 1, &xwl_output->randr_output);
         /* RROutputSetModes takes ownership of the passed in modes, so we only
          * have to free the pointer array.
@@ -664,6 +736,7 @@ apply_output_change(struct xwl_output *xwl_output)
         free(randr_modes);
     }
 
+    logical_width = logical_height = 0;
     xorg_list_for_each_entry(it, &xwl_screen->output_list, link) {
         /* output done event is sent even when some property
          * of output is changed. That means that we may already
@@ -672,20 +745,20 @@ apply_output_change(struct xwl_output *xwl_output)
         if (it == xwl_output)
             has_this_output = 1;
 
-        output_get_new_size(it, &width, &height);
+        output_get_new_size(it, &logical_width, &logical_height);
     }
 
     if (!has_this_output) {
         xorg_list_append(&xwl_output->link, &xwl_screen->output_list);
 
         /* we did not check this output for new screen size, do it now */
-        output_get_new_size(xwl_output, &width, &height);
+        output_get_new_size(xwl_output, &logical_width, &logical_height);
 
 	--xwl_screen->expecting_event;
     }
 
     if (xwl_screen->fixed_output == NULL)
-        update_screen_size(xwl_screen, width, height);
+        update_screen_size(xwl_screen, logical_width, logical_height);
     else
         RRTellChanged(xwl_screen->screen);
 
@@ -791,8 +864,8 @@ xdg_output_handle_logical_position(void *data, struct zxdg_output_v1 *xdg_output
 {
     struct xwl_output *xwl_output = data;
 
-    xwl_output->x = x;
-    xwl_output->y = y;
+    xwl_output->logical_x = x;
+    xwl_output->logical_y = y;
 }
 
 static void
@@ -801,8 +874,8 @@ xdg_output_handle_logical_size(void *data, struct zxdg_output_v1 *xdg_output,
 {
     struct xwl_output *xwl_output = data;
 
-    xwl_output->width = width;
-    xwl_output->height = height;
+    xwl_output->logical_w = width;
+    xwl_output->logical_h = height;
 }
 
 static void
@@ -1144,6 +1217,8 @@ xwl_screen_init_output(struct xwl_screen *xwl_screen)
 
     if (!RRScreenInit(xwl_screen->screen))
         return FALSE;
+
+    xwl_screen->screen->ConstrainCursorHarder = NULL;
 
     RRScreenSetSizeRange(xwl_screen->screen, 16, 16, 32767, 32767);
 
