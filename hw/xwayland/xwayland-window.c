@@ -24,15 +24,13 @@
  */
 
 #include <dix-config.h>
-
+#include "dix/dix_priv.h"
 #include <float.h>
 #include <math.h>
 #include <sys/mman.h>
 
 #include <X11/X.h>
 #include <X11/Xatom.h>
-
-#include "dix/dix_priv.h"
 
 #include "compositeext.h"
 #include "compint.h"

@@ -100,6 +100,9 @@ Equipment Corporation.
 #include <version-config.h>
 
 #include <stddef.h>
+#include "dix/registry_priv.h"
+
+#include "windowstr.h"
 #include <X11/fonts/fontstruct.h>
 #include <X11/fonts/libxfont2.h>
 
@@ -108,16 +111,15 @@ Equipment Corporation.
 #include "dix/input_priv.h"
 #include "dix/gc_priv.h"
 #include "dix/registry_priv.h"
-#include "dix/screenint_priv.h"
 #include "include/resource.h"
 #include "os/auth.h"
 #include "os/client_priv.h"
-#include "os/ddx_priv.h"
 #include "os/osdep.h"
 #include "os/screensaver.h"
 
 #include "windowstr.h"
 #include "dixfontstr.h"
+#include "dix_priv.h"
 #include "gcstruct.h"
 #include "selection.h"
 #include "colormapst.h"
@@ -4147,4 +4149,3 @@ DetachOffloadGPU(ScreenPtr secondary)
     assert(secondary->is_offload_secondary);
     secondary->is_offload_secondary = FALSE;
 }
-

@@ -17,8 +17,8 @@ is" without express or implied warranty.
 #include <X11/Xdefs.h>
 #include <X11/Xproto.h>
 
+#include "mi/mi.h"
 #include "mi/mi_priv.h"
-#include "mi/mipointer_priv.h"
 
 #include "scrnintstr.h"
 #include "dix.h"

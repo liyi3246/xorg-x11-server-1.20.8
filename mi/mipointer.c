@@ -54,12 +54,12 @@ in this Software without prior written authorization from The Open Group.
 
 #include   "dix/dix_priv.h"
 #include   "dix/input_priv.h"
-#include   "mi/mi_priv.h"
 #include   "mi/mipointer_priv.h"
 
 #include   "misc.h"
 #include   "windowstr.h"
 #include   "pixmapstr.h"
+#include   "mi.h"
 #include   "scrnintstr.h"
 #include   "mipointrst.h"
 #include   "cursorstr.h"
@@ -114,10 +114,6 @@ static void miPointerMoveNoEvent(DeviceIntPtr pDev, ScreenPtr pScreen, int x,
                                  int y);
 
 static InternalEvent *mipointermove_events;   /* for WarpPointer MotionNotifies */
-
-static void
-miRecolorCursor(DeviceIntPtr pDev, ScreenPtr pScr,
-                CursorPtr pCurs, Bool displayed);
 
 Bool
 miPointerInitialize(ScreenPtr pScreen,
@@ -299,7 +295,7 @@ miPointerSetCursorPosition(DeviceIntPtr pDev, ScreenPtr pScreen,
     return TRUE;
 }
 
-static void
+void
 miRecolorCursor(DeviceIntPtr pDev, ScreenPtr pScr,
                 CursorPtr pCurs, Bool displayed)
 {

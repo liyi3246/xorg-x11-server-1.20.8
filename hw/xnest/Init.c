@@ -20,9 +20,7 @@ is" without express or implied warranty.
 #include <X11/fonts/fontstruct.h>
 #include <X11/fonts/libxfont2.h>
 
-#include "dix/screenint_priv.h"
-#include "mi/mi_priv.h"
-#include "os/ddx_priv.h"
+#include "os/osdep.h"
 
 #include "screenint.h"
 #include "input.h"
@@ -30,6 +28,7 @@ is" without express or implied warranty.
 #include "scrnintstr.h"
 #include "windowstr.h"
 #include "servermd.h"
+#include "mi.h"
 #include "dixfontstr.h"
 #include "extinit_priv.h"
 #include "Xnest.h"

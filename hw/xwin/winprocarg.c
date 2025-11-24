@@ -35,9 +35,7 @@ from The Open Group.
 #include <sys/utsname.h>
 #endif
 
-#include "os/cmdline.h"
 #include "os/osdep.h"
-#include "os/ddx_priv.h"
 
 #include <../xfree86/common/xorgVersion.h>
 #include "win.h"

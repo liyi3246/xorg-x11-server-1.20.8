@@ -28,19 +28,16 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
-#include <X11/Xatom.h>
-#include <X11/extensions/render.h>
-#include <X11/extensions/dpmsconst.h>
-
-#include "dix/dix_priv.h"
-#include "mi/mi_priv.h"
-
+#include "mi.h"
 #include "xf86.h"
 #include "xf86DDC.h"
 #include "windowstr.h"
 #include "xf86Crtc.h"
 #include "xf86Modes.h"
 #include "xf86RandR12.h"
+#include "X11/extensions/render.h"
+#include "X11/extensions/dpmsconst.h"
+#include "X11/Xatom.h"
 
 void
 xf86RotateCrtcRedisplay(xf86CrtcPtr crtc, PixmapPtr dst_pixmap,

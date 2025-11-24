@@ -41,7 +41,6 @@
 #include "dix/input_priv.h"
 #include "mi/mi_priv.h"
 #include "mi/mipointer_priv.h"
-#include "os/cmdline.h"
 
 #include "xkbsrv.h"
 #include "XIstubs.h"            /* even though we don't use stubs.  cute, no? */
@@ -52,6 +51,10 @@
 #include "xserver-properties.h"
 #include "inpututils.h"
 #include "optionstr.h"
+
+#if defined(CONFIG_UDEV) || defined(CONFIG_HAL)
+#include <hotplug.h>
+#endif
 
 #define AtomFromName(x) MakeAtom(x, strlen(x), 1)
 

@@ -32,13 +32,9 @@ from The Open Group.
 #include <xwin-config.h>
 #endif
 
-#include "win.h"
-
-#include "dix/dix_priv.h"
-#include "dix/screenint_priv.h"
-#include "os/ddx_priv.h"
 #include "os/osdep.h"
 
+#include "win.h"
 #include "winmsg.h"
 #include "winconfig.h"
 #include "winprefs.h"
@@ -63,14 +59,12 @@ typedef WINAPI HRESULT(*SHGETFOLDERPATHPROC) (HWND hwndOwner,
                                               DWORD dwFlags, LPTSTR pszPath);
 #endif
 
-#include "dix/screenint_priv.h"
+#include "os/osdep.h"
 
 #include "winmonitors.h"
 #include "nonsdk_extinit.h"
 #include "extinit_priv.h"
 #include "pseudoramiX/pseudoramiX.h"
-
-#include "dix/dix_priv.h"
 
 #include "glx_extinit.h"
 #ifdef XWIN_GLX_WINDOWS
