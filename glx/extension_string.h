@@ -44,6 +44,7 @@ enum {
     ARB_fbconfig_float_bit,
     ARB_framebuffer_sRGB_bit,
     ARB_multisample_bit,
+    ARB_robustness_isolation_bit,
     EXT_create_context_es_profile_bit,
     EXT_create_context_es2_profile_bit,
     EXT_fbconfig_packed_float_bit,

@@ -28,9 +28,16 @@
 #include "indirect_dispatch.h"
 #include "opaque.h"
 
-#define ALL_VALID_FLAGS \
-    (GLX_CONTEXT_DEBUG_BIT_ARB | GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB \
-     | GLX_CONTEXT_ROBUST_ACCESS_BIT_ARB)
+#ifndef GLX_CONTEXT_RESET_ISOLATION_BIT_ARB
+#define GLX_CONTEXT_RESET_ISOLATION_BIT_ARB 0x8
+#endif
+
+#define ALL_VALID_FLAGS (\
+    GLX_CONTEXT_DEBUG_BIT_ARB | \
+    GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | \
+    GLX_CONTEXT_ROBUST_ACCESS_BIT_ARB | \
+    GLX_CONTEXT_RESET_ISOLATION_BIT_ARB | \
+    0)
 
 static Bool
 validate_GL_version(int major_version, int minor_version)
